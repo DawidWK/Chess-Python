@@ -2,7 +2,7 @@ class GameState():
     def __init__(self):
         self.board = [
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
-            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "wR"],
+            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
@@ -10,16 +10,6 @@ class GameState():
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
         ]
-        # self.board = [
-        #     ["--", "--", "--", "--", "bK", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "bp", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "wR", "--", "--", "bB", "--", "--"],
-        #     ["--", "--", "--", "bQ", "wQ", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
-        #     ["--", "--", "--", "--", "wK", "--", "--", "--"],
-        # ]
         self.white_to_move = True
         self.move_log = []
         self.white_king_location = (7, 4)
@@ -54,20 +44,18 @@ class GameState():
         # update enpassant_possible
         if move.piece_moved[1] == 'p' and abs(move.start_row - move.end_row) == 2: # only when pawn moves two squere
             self.enpassant_possible = ((move.start_row + move.end_row) // 2, move.end_col)
-            print(self.enpassant_possible)
         else:
             self.enpassant_possible = ()
         
         # castle
         if move.is_castle_moves:
             if move.end_col - move.start_col == 2: # king side castle
-                self.board[move.end_row][move.end_col - 1] = self.board[move.end_row][move.endcol + 1] # moves the rook
-                self.board[move.end_row][move.end_col - 1] = '--' # erase old rook
+                self.board[move.end_row][move.end_col - 1] = self.board[move.end_row][move.end_col + 1] # moves the rook
+                self.board[move.end_row][move.end_col + 1] = '--' # erase old rook
             else: # queenside
-                self.board[move.end_row][move.end_col + 1] = self.board[move.end_row][move.endcol - 2]
+                self.board[move.end_row][move.end_col + 1] = self.board[move.end_row][move.end_col - 2]
                 self.board[move.end_row][move.end_col - 2] = '--' # erase old rook
         # update castling rights wheter it is rook or king move
-        print(self.current_castling_rights.wks)
         self.update_castle_right(move)
         self.castle_right_log.append(CastleRights(self.current_castling_rights.wks,self.current_castling_rights.bks, 
                                             self.current_castling_rights.wqs,self.current_castling_rights.bqs))
@@ -82,7 +70,7 @@ class GameState():
             if move.piece_moved == "wK":
                 self.white_king_location = (move.start_row, move.start_col)
             if move.piece_moved == "bK":
-                self.white_black_location = (move.start_row, move.start_col)
+                self.black_king_location = (move.start_row, move.start_col)
             # enpassant 
             if move.is_enpassant_move:
                 self.board[move.end_row][move.end_col] = '--' # blank squere witch enpassant captueret previously
@@ -138,11 +126,11 @@ class GameState():
         temp_castle_rights = CastleRights(self.current_castling_rights.wks, self.current_castling_rights.bks, self.current_castling_rights.wqs, self.current_castling_rights.bqs)
         # 1)
         moves = self.get_all_possible_moves()
-        # if self.white_to_move:
-        #     self.get_castle_moves(self.white_king_location[0], self.white_king_location[1], moves)
-        # else:
-        #     self.get_castle_moves(self.black_king_location[0], self.black_king_location[1], moves)
-        # 2)
+        if self.white_to_move:
+            self.get_castle_moves(self.white_king_location[0], self.white_king_location[1], moves)
+        else:
+            self.get_castle_moves(self.black_king_location[0], self.black_king_location[1], moves)
+        #2)
         for i in range(len(moves) -1, -1, -1):
             self.make_move(moves[i])
             self.white_to_move = not self.white_to_move
@@ -161,7 +149,6 @@ class GameState():
         
         self.enpassant_possible = temp_enpassant_possible 
         self.current_castling_rights = temp_castle_rights
-        print('dada ', self.current_castling_rights.wks)
         return moves
 
     ''' 
@@ -316,7 +303,7 @@ class GameState():
             elif (self.white_to_move and self.board[row - i][col + i][0] == 'b') or (not self.white_to_move and self.board[row - i][col + i][0] == 'w'):
                 moves.append(Move((row, col), (row - i, col + i), self.board))
                 break
-            elif self.board[row - i][col - i] == '--':
+            elif self.board[row - i][col + i] == '--':
                 moves.append(Move((row, col), (row - i, col + i), self.board))
             i += 1
         # south-east
@@ -388,22 +375,20 @@ class GameState():
     def get_castle_moves(self, row, col, moves):
         if self.squere_under_attack(row, col):
             return
-        if (self.white_to_move and self.current_castling_rights.wks) and (not self.white_to_move and self.current_castling_rights.bks):
+        if (self.white_to_move and self.current_castling_rights.wks) or (not self.white_to_move and self.current_castling_rights.bks):
             self.get_king_side_castle_moves(row, col, moves)
-        if (self.white_to_move and self.current_castling_rights.wqs) and (not self.white_to_move and self.current_castling_rights.bqs):
-            self.get_king_side_castle_moves(row, col, moves)
+        if (self.white_to_move and self.current_castling_rights.wqs) or (not self.white_to_move and self.current_castling_rights.bqs):
+            self.get_queen_side_castle_moves(row, col, moves)
     
     def get_king_side_castle_moves(self, row, col, moves):
         if self.board[row][col + 1] == '--' and self.board[row][col + 2] == '--':
-            if not self.squere_under_attack(row, c+1) and not self.squere_under_attack(row, col+ 2):
+            if not self.squere_under_attack(row, col + 1) and not self.squere_under_attack(row, col + 2):
                 moves.append(Move((row, col), (row, col + 2), self.board, is_castle_moves = True))
-                print('mozesz na prwno')
-        print('mozesz')
     
     def get_queen_side_castle_moves(self, row, col, moves):
         if self.board[row][col - 1] == '--' and self.board[row][col - 2] == '--' and self.board[row][col - 3] == '--':
-            if not self.squere_under_attack(row, c - 1) and not self.squere_under_attack(row, col - 2):
-                moves.append(Move((row, col), (row, col + 2), self.board, is_castle_moves = True))
+            if not self.squere_under_attack(row, col - 1) and not self.squere_under_attack(row, col - 2):
+                moves.append(Move((row, col), (row, col - 2), self.board, is_castle_moves = True))
     
 
 class CastleRights():
