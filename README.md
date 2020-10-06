@@ -1,9 +1,8 @@
 # Chess Python
  WORK IN PROGRESS
- right now it has tons of bugs, its unplayable because i messed up with code while creating castling methods.
 
  TODO:
- - fix it :)
+ - fix when pawn should prevent from castling 
  - add animation
  - add END GAME 
  - add reset 
