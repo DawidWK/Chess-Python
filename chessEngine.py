@@ -2,7 +2,7 @@ class GameState():
     def __init__(self):
         self.board = [
             ["bR", "bN", "bB", "bQ", "bK", "bB", "bN", "bR"],
-            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
+            ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "wR"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
@@ -10,6 +10,16 @@ class GameState():
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"],
         ]
+        # self.board = [
+        #     ["--", "--", "--", "--", "bK", "--", "--", "--"],
+        #     ["--", "--", "--", "--", "bp", "--", "--", "--"],
+        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
+        #     ["--", "--", "wR", "--", "--", "bB", "--", "--"],
+        #     ["--", "--", "--", "bQ", "wQ", "--", "--", "--"],
+        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
+        #     ["--", "--", "--", "--", "--", "--", "--", "--"],
+        #     ["--", "--", "--", "--", "wK", "--", "--", "--"],
+        # ]
         self.white_to_move = True
         self.move_log = []
         self.white_king_location = (7, 4)
@@ -31,7 +41,7 @@ class GameState():
         if move.piece_moved == "wK":
             self.white_king_location = (move.end_row, move.end_col)
         if move.piece_moved == "bK":
-            self.white_black_location = (move.end_row, move.end_col)
+            self.black_king_location = (move.end_row, move.end_col)
         
         # pawn promotion
         if move.is_pawn_promotion:
@@ -48,6 +58,7 @@ class GameState():
         else:
             self.enpassant_possible = ()
         
+        # castle
         if move.is_castle_moves:
             if move.end_col - move.start_col == 2: # king side castle
                 self.board[move.end_row][move.end_col - 1] = self.board[move.end_row][move.endcol + 1] # moves the rook
@@ -125,13 +136,12 @@ class GameState():
         #save it in case of undoing move
         temp_enpassant_possible = self.enpassant_possible
         temp_castle_rights = CastleRights(self.current_castling_rights.wks, self.current_castling_rights.bks, self.current_castling_rights.wqs, self.current_castling_rights.bqs)
-        print('prawda:   +_ ', temp_castle_rights.wks)
         # 1)
         moves = self.get_all_possible_moves()
-        if self.white_to_move:
-            self.get_castle_moves(self.white_king_location[0], self.white_king_location[1], moves)
-        else:
-            self.get_castle_moves(self.black_king_location[0], self.black_king_location[1], moves)
+        # if self.white_to_move:
+        #     self.get_castle_moves(self.white_king_location[0], self.white_king_location[1], moves)
+        # else:
+        #     self.get_castle_moves(self.black_king_location[0], self.black_king_location[1], moves)
         # 2)
         for i in range(len(moves) -1, -1, -1):
             self.make_move(moves[i])
@@ -160,8 +170,10 @@ class GameState():
     def in_check(self):
         if self.white_to_move:
             return self.squere_under_attack(self.white_king_location[0], self.white_king_location[1])
+            
         else: 
             return self.squere_under_attack(self.black_king_location[0], self.black_king_location[1])
+            
 
     def squere_under_attack(self, row, col):
         self.white_to_move = not self.white_to_move # switch to opponent's turn
@@ -211,13 +223,11 @@ class GameState():
                     moves.append(Move((row, col), (row - 1, col -1), self.board))
                 elif (row - 1, col - 1) == self.enpassant_possible:
                     moves.append(Move((row, col), (row - 1, col -1), self.board, is_enpassant_move = True))
-                    print("trigger wp r-1 c-1")
             if col + 1 <= 7:
                 if self.board[row - 1][col + 1][0] == 'b':
                     moves.append(Move((row, col), (row - 1, col + 1), self.board))
                 elif (row - 1, col + 1) == self.enpassant_possible:
                     moves.append(Move((row, col), (row - 1, col + 1), self.board, is_enpassant_move = True))
-                    print("trigger wp r-1 c+1")
         # black pawns
         if not self.white_to_move:
             if self.board[row + 1][col] == '--':
@@ -241,7 +251,7 @@ class GameState():
     def get_rook_moves(self, row, col, moves):
         # north
         i = row - 1
-        while i > 0:
+        while i > -1:
             if (self.white_to_move and self.board[i][col][0] == 'w') or (not self.white_to_move and self.board[i][col][0] == 'b'):
                 break
             elif (self.white_to_move and self.board[i][col][0] == 'b') or (not self.white_to_move and self.board[i][col][0] == 'w'):
@@ -289,7 +299,7 @@ class GameState():
     def get_bishop_moves(self, row, col, moves):
         # north-west
         i = 1
-        while row - i >= 0 or col - i >= 0:
+        while row - i >= 0 and col - i >= 0:
             if (self.white_to_move and self.board[row - i][col - i][0] == 'w') or (not self.white_to_move and self.board[row - i][col - i][0] == 'b'):
                 break
             elif (self.white_to_move and self.board[row - i][col - i][0] == 'b') or (not self.white_to_move and self.board[row - i][col - i][0] == 'w'):
