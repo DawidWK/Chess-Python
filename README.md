@@ -1,10 +1,7 @@
 # Chess Python
- WORK IN PROGRESS
-
  TODO:
- - fix when pawn should prevent from castling 
- - add animation
  - add END GAME 
+ - add animation
  - add reset 
  - make decent README page
  - A.I. (????)
